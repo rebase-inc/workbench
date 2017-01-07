@@ -13,9 +13,12 @@ RUN apk --quiet update && \
 
 RUN pyvenv /venv
 RUN pip --quiet install --upgrade pip
-RUN pip install jupyter
-RUN mkdir -p /usr/app/notebooks
 
+RUN mkdir -p /usr/app/notebooks /usr/app/site-packages
+COPY ./requirements.txt /root/requirements.txt
+RUN pip install -r /root/requirements.txt 
+ENV PYTHONPATH /usr/app/site-packages
+COPY ./scanner /usr/app/site-packages/scanner
 COPY ./config.py /root/.jupyter/
 
 WORKDIR /usr/app/notebooks
