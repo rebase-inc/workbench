@@ -11,16 +11,26 @@ RUN apk --quiet update && \
         python3-dev \
         docker
 
-RUN pyvenv /venv
-RUN pip --quiet install --upgrade pip
+#RUN pyvenv /venv
+RUN mkdir -p /usr/app/notebooks /usr/app/site-packages /usr/app/src
+COPY ./requirements.txt /
 
-RUN mkdir -p /usr/app/notebooks /usr/app/site-packages
-COPY ./requirements.txt /root/requirements.txt
-RUN pip install -r /root/requirements.txt 
-ENV PYTHONPATH /usr/app/site-packages
-COPY ./scanner /usr/app/site-packages/scanner
+ARG PYTHON_COMMONS_HOST
+ARG PYTHON_COMMONS_SCHEME
+ARG PYTHON_COMMONS_PORT
+
+RUN pip --quiet install --upgrade pip
+RUN pip install \
+        --quiet \
+        --no-cache-dir \
+        --trusted-host ${PYTHON_COMMONS_HOST} \
+        --extra-index-url ${PYTHON_COMMONS_SCHEME}${PYTHON_COMMONS_HOST}:${PYTHON_COMMONS_PORT} \
+        --requirement /requirements.txt
+
+COPY ./ /usr/app/src
 COPY ./config.py /root/.jupyter/
 
 WORKDIR /usr/app/notebooks
 
-CMD sh -c 'jupyter notebook --ip=* --port 8888 --no-browser'
+RUN jupyter nbextension enable --py --sys-prefix widgetsnbextension
+CMD sh -c 'jupyter notebook --ip=* --port 8888 --no-browser' # has to be in a string because of a bug in jupyter
