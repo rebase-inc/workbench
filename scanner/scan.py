@@ -27,8 +27,7 @@ def scan_public_users(*github_ids, show_progress = True):
         jobs.append((scan_repos, delete_token))
     if show_progress:
         show_scan_progress(*jobs)
-    else:
-        return [ (a.id, b.id, c.id) for (a,b,c) in jobs ]
+    return jobs
 
 def show_scan_progress(*scan_jobs):
     from IPython.lib import backgroundjobs
