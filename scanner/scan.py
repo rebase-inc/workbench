@@ -1,5 +1,6 @@
 import os
 import time
+from collections import Counter
 from multiprocessing import current_process
 
 from rq import Queue
@@ -21,8 +22,18 @@ def scan_public_users(*github_ids, show_progress = True):
     jobs = []
     for github_id in github_ids:
         access_token = authgen.create_github_access_token(USERNAME, PASSWORD, 'public scan {}'.format(github_id))
-        scan_repos = crawler_queue.enqueue_call(func = 'scanner.scan_all_repos', args = (access_token, github_id), result_ttl=86400, meta = {'remaining': [], 'finished': []})
-        delete_token = crawler_queue.enqueue_call(func = 'scanner.delete_github_access_token', args = (USERNAME, PASSWORD, access_token), timeout = 60, depends_on = scan_repos)
+        scan_repos = crawler_queue.enqueue_call(
+                func = 'scanner.scan_all_repos',
+                args = (access_token, github_id),
+                result_ttl=86400,
+                meta = {'commits_scanned': Counter(), 'all_commits': Counter()}
+                )
+        delete_token = crawler_queue.enqueue_call(
+                func = 'scanner.delete_github_access_token',
+                args = (USERNAME, PASSWORD, access_token),
+                timeout = 60,
+                depends_on = scan_repos
+                )
         jobs.append((scan_repos, delete_token))
     if show_progress:
         show_progress_bars(*jobs)
@@ -51,8 +62,9 @@ def show_progress_bar(scan_job, delete_job):
     display(box)
     bar_styles = {'queued': 'info', 'started': 'info', 'deferred': 'warning', 'failed': 'danger', 'finished': 'success' }
     while True:
-        scan_job.refresh() # get new meta data
-        scan_progress.value = len(scan_job.meta['finished']) / float(len(scan_job.meta['finished'] + scan_job.meta['remaining']) or 1.0)
+        scan_job.refresh()
+        percentage_complete = max(sum(scan_job.meta['commits_scanned'].values()), 0.01) / max(sum(scan_job.meta['all_commits'].values()), 1)
+        scan_progress.value = 1.0 if scan_job.status == 'finished' else percentage_complete # the metadata is bogus once the job is finished
         scan_progress.bar_style = bar_styles[scan_job.status]
         delete_progress.value = 0.0 if delete_job.status in ['queued', 'started', 'deferred'] else 1.0
         delete_progress.bar_style = bar_styles[delete_job.status]
