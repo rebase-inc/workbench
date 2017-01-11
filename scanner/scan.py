@@ -63,8 +63,8 @@ def show_progress_bar(scan_job, delete_job):
     bar_styles = {'queued': 'info', 'started': 'info', 'deferred': 'warning', 'failed': 'danger', 'finished': 'success' }
     while True:
         scan_job.refresh()
-        percentage_complete = max(sum(scan_job.meta['commits_scanned'].values()), 0.01) / max(sum(scan_job.meta['all_commits'].values()), 1)
-        scan_progress.value = 1.0 if scan_job.status == 'finished' else percentage_complete # the metadata is bogus once the job is finished
+        percentage_complete = sum(scan_job.meta['commits_scanned'].values()) / max(sum(scan_job.meta['all_commits'].values()), 1)
+        scan_progress.value = 1.0 if scan_job.status == 'finished' else max(0.01, percentage_complete) # the metadata is bogus once the job is finished
         scan_progress.bar_style = bar_styles[scan_job.status]
         delete_progress.value = 0.0 if delete_job.status in ['queued', 'started', 'deferred'] else 1.0
         delete_progress.bar_style = bar_styles[delete_job.status]
