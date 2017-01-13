@@ -15,18 +15,19 @@ rsyslog.setup(log_level = os.environ['LOG_LEVEL'])
 USERNAME = os.environ['GITHUB_CRAWLER_USERNAME']
 PASSWORD = os.environ['GITHUB_CRAWLER_PASSWORD']
 
-def scan_public_users(*github_ids, show_progress = True):
+def scan_public_users(*github_logins, show_progress = True):
     connection = StrictRedis(host = 'redis', port = 6379)
     crawler_queue = Queue('public_github_scanner', connection = connection, default_timeout = 3600)
     jobs = []
-    for github_id in github_ids:
-        access_token = authgen.create_github_access_token(USERNAME, PASSWORD, 'public scan {}'.format(github_id))
-        scan_repos = crawler_queue.enqueue_call(func = 'scanner.scan_all_repos', args = (access_token, github_id), result_ttl=86400, meta = {'remaining': [], 'finished': []})
+    for github_login in github_logins:
+        access_token = authgen.create_github_access_token(USERNAME, PASSWORD, 'public scan {}'.format(github_login))
+        scan_repos = crawler_queue.enqueue_call(func = 'scanner.scan_all_repos', args = (access_token, github_login), result_ttl=86400, meta = {'remaining': [], 'finished': []})
         delete_token = crawler_queue.enqueue_call(func = 'scanner.delete_github_access_token', args = (USERNAME, PASSWORD, access_token), timeout = 60, depends_on = scan_repos)
         jobs.append((scan_repos, delete_token))
     if show_progress:
         show_progress_bars(*jobs)
     return jobs
+
 
 def show_progress_bars(*jobs):
     from IPython.lib import backgroundjobs
@@ -60,3 +61,33 @@ def show_progress_bar(scan_job, delete_job):
             time.sleep(2) # enough time for graphics to update
             break
         time.sleep(2)
+
+
+def crawler_run(func, *args):
+    crawler_queue = Queue(
+        'public_github_scanner',
+        connection=StrictRedis(host='redis'),
+    )
+    # if the crawler would create/delete its own token, there would be not need to 
+    # keep track of the job progress
+    access_token = authgen.create_github_access_token(USERNAME, PASSWORD, 'public scan {}'.format(args))
+    crawler_job = crawler_queue.enqueue_call(
+        func=func,
+        args=(access_token, *args),
+    )
+    crawler_queue.enqueue_call(
+        func='scanner.delete_github_access_token',
+        args=(USERNAME, PASSWORD, access_token),
+        timeout=60,
+        depends_on=crawler_job
+    )
+
+
+def scan_repo(github_login, repo_name, leave_clone=True):
+    crawler_run('scanner.scan_repo', github_login, repo_name, leave_clone)
+
+
+def scan_commit(github_login, repo_name, commit_sha, leave_clone=True):
+    crawler_run('scanner.scan_commit', github_login, repo_name, commit_sha, leave_clone)
+
+
