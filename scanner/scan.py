@@ -28,6 +28,7 @@ def scan_public_users(*github_ids, show_progress = True):
         show_progress_bars(*jobs)
     return jobs
 
+
 def show_progress_bars(*jobs):
     from IPython.lib import backgroundjobs
     bgjobs = backgroundjobs.BackgroundJobManager()
@@ -56,3 +57,33 @@ def show_progress_bar(scan_job):
         scan_progress.value = 1.0 if scan_job.status == 'finished' else max(0.01, percentage_complete) # the metadata is bogus once the job is finished
         scan_progress.bar_style = bar_styles[scan_job.status]
         time.sleep(2)
+
+
+def crawler_run(func, *args):
+    crawler_queue = Queue(
+        'public_github_scanner',
+        connection=StrictRedis(host='redis'),
+    )
+    # if the crawler would create/delete its own token, there would be not need to 
+    # keep track of the job progress
+    access_token = authgen.create_github_access_token(USERNAME, PASSWORD, 'public scan {}'.format(args))
+    crawler_job = crawler_queue.enqueue_call(
+        func=func,
+        args=(access_token, *args),
+    )
+    crawler_queue.enqueue_call(
+        func='scanner.delete_github_access_token',
+        args=(USERNAME, PASSWORD, access_token),
+        timeout=60,
+        depends_on=crawler_job
+    )
+
+
+def scan_repo(github_login, repo_name, leave_clone=True):
+    crawler_run('scanner.scan_repo', github_login, repo_name, leave_clone)
+
+
+def scan_commit(github_login, repo_name, commit_sha, leave_clone=True):
+    crawler_run('scanner.scan_commit', github_login, repo_name, commit_sha, leave_clone)
+
+
