@@ -15,7 +15,7 @@ rsyslog.setup(log_level = os.environ['LOG_LEVEL'])
 
 def scan_public_users(*github_ids, show_progress = True):
     connection = StrictRedis(host = 'redis', port = 6379)
-    crawler_queue = Queue('public_github_scanner', connection = connection, default_timeout = 3600)
+    crawler_queue = Queue('public_github_scanner', connection = connection)
     jobs = []
     for github_id in github_ids:
         job = crawler_queue.enqueue_call(
