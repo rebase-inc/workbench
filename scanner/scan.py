@@ -46,7 +46,7 @@ def scan_public_users(*github_ids, show_progress = True):
 def show_progress_bars(*jobs):
     from IPython.lib import backgroundjobs
     bgjobs = backgroundjobs.BackgroundJobManager()
-    for job in reversed(jobs): # ipywidgets displays newest things on top
+    for job in jobs:
         bgjobs.new(show_progress_bar, job)
         #show_progress_bar(job)
 
