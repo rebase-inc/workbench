@@ -48,23 +48,28 @@ def show_progress_bar(scan_job):
         ])
     display(box)
     bar_styles = {'queued': 'info', 'started': 'info', 'deferred': 'warning', 'failed': 'danger', 'finished': 'success' }
-    while 'finished' not in scan_job.meta:
-        time.sleep(0.1)
-        scan_job.refresh()
     while True:
         scan_job.refresh()
-        percentage_complete = sum(scan_job.meta['finished'].values()) / max(sum(scan_job.meta['steps'].values()), 1)
-        scan_progress.value = 1.0 if scan_job.status == 'finished' else max(0.01, percentage_complete) # the metadata is bogus once the job is finished
+        if hasattr(scan_job.meta, 'finished'):
+            percentage_complete = sum(scan_job.meta['finished'].values()) / max(sum(scan_job.meta['steps'].values()), 1)
+            scan_progress.value = 1.0 if scan_job.status == 'finished' else max(0.01, percentage_complete) # the metadata is bogus once the job is finished
         scan_progress.bar_style = bar_styles[scan_job.status]
-        time.sleep(2)
-
+        if scan_job.status == 'finished':
+            scan_progress.value = 1.0
+            scan_progress.bar_style = bar_styles[scan_job.status]
+            break
+        elif scan_job.status == 'failed':
+            scan_progress.value = max(0.01, scan_progress.value)
+            break
+        else:
+            time.sleep(2)
 
 def crawler_run(func, *args):
     crawler_queue = Queue(
         'public_github_scanner',
         connection=StrictRedis(host='redis'),
     )
-    # if the crawler would create/delete its own token, there would be not need to 
+    # if the crawler would create/delete its own token, there would be not need to
     # keep track of the job progress
     access_token = authgen.create_github_access_token(USERNAME, PASSWORD, 'public scan {}'.format(args))
     crawler_job = crawler_queue.enqueue_call(
