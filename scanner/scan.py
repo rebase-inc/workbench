@@ -64,7 +64,7 @@ def show_progress_bar(scan_job):
     bar_styles = {'queued': 'info', 'started': 'info', 'deferred': 'warning', 'failed': 'danger', 'finished': 'success' }
     while True:
         scan_job.refresh()
-        if hasattr(scan_job.meta, 'finished'):
+        if 'finished' in scan_job.meta:
             percentage_complete = sum(scan_job.meta['finished'].values()) / max(sum(scan_job.meta['steps'].values()), 1)
             scan_progress.value = 1.0 if scan_job.status == 'finished' else max(0.01, percentage_complete) # the metadata is bogus once the job is finished
         scan_progress.bar_style = bar_styles[scan_job.status]
