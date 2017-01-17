@@ -1,5 +1,7 @@
 import os
 import time
+import string
+import random
 from collections import Counter
 from multiprocessing import current_process
 
@@ -7,11 +9,23 @@ from rq import Queue
 from redis import StrictRedis
 from github import Github
 
-import authgen
+#import authgen
 import rsyslog
 
-current_process().name = os.environ['HOSTNAME']
-rsyslog.setup(log_level = os.environ['LOG_LEVEL'])
+#current_process().name = os.environ['HOSTNAME']
+#rsyslog.setup(log_level = os.environ['LOG_LEVEL'])
+
+def get_github_users(query = None, language = 'python', count = 10, **params):
+    username = os.environ['GITHUB_CRAWLER_USERNAME']
+    password = os.environ['GITHUB_CRAWLER_PASSWORD']
+    query = query or random.choice(string.ascii_lowercase)
+    return list(user.login for user in Github().search_users(
+            query = query,
+            type = 'user',
+            repos = '>0',
+            language = language,
+            **params
+            )[0:count])
 
 def scan_public_users(*github_ids, show_progress = True):
     connection = StrictRedis(host = 'redis', port = 6379)
@@ -91,4 +105,5 @@ def scan_repo(github_login, repo_name, leave_clone=True):
 def scan_commit(github_login, repo_name, commit_sha, leave_clone=True):
     crawler_run('scanner.scan_commit', github_login, repo_name, commit_sha, leave_clone)
 
-
+if __name__ == '__main__':
+    print(get_github_users())
