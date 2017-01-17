@@ -15,16 +15,15 @@ import rsyslog
 #current_process().name = os.environ['HOSTNAME']
 #rsyslog.setup(log_level = os.environ['LOG_LEVEL'])
 
-def get_github_users(query = None, language = 'python', count = 10, **params):
+def get_github_users(query = None, language = 'python', count = 10, repos = '>0'):
     username = os.environ['GITHUB_CRAWLER_USERNAME']
     password = os.environ['GITHUB_CRAWLER_PASSWORD']
-    query = query or random.choice(string.ascii_lowercase)
+    query = query or random.choice(string.ascii_lowercase) + random.choice(string.ascii_lowercase)
     return list(user.login for user in Github().search_users(
             query = query,
             type = 'user',
-            repos = '>0',
-            language = language,
-            **params
+            repos = repos,
+            language = language
             )[0:count])
 
 def scan_public_users(*github_ids, show_progress = True):
