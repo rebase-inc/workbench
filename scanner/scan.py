@@ -26,6 +26,9 @@ def get_github_users(query = None, language = 'python', count = 10, repos = '>0'
             language = language
             )[0:count])
 
+def clean():
+    Queue('population_analyzer', connection = StrictRedis(host = 'redis', port = 6379)).enqueue('leaderboard.clean')
+
 def scan_public_users(*github_ids, show_progress = True):
     github_ids = github_ids or get_github_users()
     connection = StrictRedis(host = 'redis', port = 6379)
