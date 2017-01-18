@@ -26,6 +26,9 @@ def get_github_users(query = None, language = 'python', count = 10, repos = '>0'
             language = language
             )[0:count])
 
+def update_ranking(github_id):
+    Queue('population_analyzer', connection = StrictRedis(host = 'redis', port = 6379)).enqueue('leaderboard.update_ranking_for_user', github_id)
+
 def clean():
     Queue('population_analyzer', connection = StrictRedis(host = 'redis', port = 6379)).enqueue('leaderboard.clean')
 
