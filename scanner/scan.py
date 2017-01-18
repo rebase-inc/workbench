@@ -27,6 +27,7 @@ def get_github_users(query = None, language = 'python', count = 10, repos = '>0'
             )[0:count])
 
 def scan_public_users(*github_ids, show_progress = True):
+    github_ids = github_ids or get_github_users()
     connection = StrictRedis(host = 'redis', port = 6379)
     crawler_queue = Queue('public_github_scanner', connection = connection)
     jobs = []
