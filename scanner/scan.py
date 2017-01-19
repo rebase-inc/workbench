@@ -84,32 +84,13 @@ def show_progress_bar(scan_job):
         else:
             time.sleep(2)
 
-def crawler_run(func, *args):
-    crawler_queue = Queue(
-        'public_github_scanner',
-        connection=StrictRedis(host='redis'),
-    )
-    # if the crawler would create/delete its own token, there would be not need to
-    # keep track of the job progress
-    access_token = authgen.create_github_access_token(USERNAME, PASSWORD, 'public scan {}'.format(args))
-    crawler_job = crawler_queue.enqueue_call(
-        func=func,
-        args=(access_token, *args),
-    )
-    crawler_queue.enqueue_call(
-        func='scanner.delete_github_access_token',
-        args=(USERNAME, PASSWORD, access_token),
-        timeout=60,
-        depends_on=crawler_job
-    )
+def scan_public_repo(github_login, repo_name, cleanup=True):
+    queue = Queue('public_github_scanner', connection = StrictRedis(host = 'redis', port = 6379))
+    queue.enqueue('scanner.scan_public_repo', github_login, repo_name, cleanup)
 
-
-def scan_repo(github_login, repo_name, leave_clone=True):
-    crawler_run('scanner.scan_repo', github_login, repo_name, leave_clone)
-
-
-def scan_commit(github_login, repo_name, commit_sha, leave_clone=True):
-    crawler_run('scanner.scan_commit', github_login, repo_name, commit_sha, leave_clone)
+def scan_public_commit(github_login, repo_name, commit_sha, leave_clone=True):
+    queue = Queue('public_github_scanner', connection = StrictRedis(host = 'redis', port = 6379))
+    queue.enqueue('scanner.scan_public_commit', github_login, repo_name, commit_sha, cleanup)
 
 if __name__ == '__main__':
     print(get_github_users())
