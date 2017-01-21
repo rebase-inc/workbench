@@ -88,6 +88,10 @@ def scan_public_repo(github_login, repo_name, cleanup=True):
     queue = Queue('public_github_scanner', connection = StrictRedis(host = 'redis', port = 6379))
     queue.enqueue('scanner.scan_public_repo', github_login, repo_name, cleanup)
 
+def scan_private_repo(auth_token, repo_name, cleanup=True):
+    queue = Queue('private_github_scanner', connection = StrictRedis(host = 'redis', port = 6379))
+    queue.enqueue('scanner.scan_private_repo', auth_token, repo_name, cleanup)
+
 def scan_public_commit(github_login, repo_name, commit_sha, leave_clone=True):
     queue = Queue('public_github_scanner', connection = StrictRedis(host = 'redis', port = 6379))
     queue.enqueue('scanner.scan_public_commit', github_login, repo_name, commit_sha, cleanup)
