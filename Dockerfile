@@ -29,6 +29,7 @@ RUN pip install \
 
 COPY ./ /usr/app/src
 COPY ./config.py /root/.jupyter/
+ENV PYTHONPATH=/usr/app/src
 
 WORKDIR /usr/app/notebooks
 
