@@ -11,17 +11,16 @@ RUN apk --quiet update && \
         python3-dev \
         docker
 
-#RUN pyvenv /venv
 RUN mkdir -p /usr/app/notebooks /usr/app/site-packages /usr/app/src
+
 COPY ./requirements.txt /
 
 ARG PYTHON_COMMONS_HOST
 ARG PYTHON_COMMONS_SCHEME
 ARG PYTHON_COMMONS_PORT
 
-RUN pip --quiet install --upgrade pip
-RUN pip install \
-        --quiet \
+RUN pip --quiet install --upgrade pip && \
+    pip install \
         --no-cache-dir \
         --trusted-host ${PYTHON_COMMONS_HOST} \
         --extra-index-url ${PYTHON_COMMONS_SCHEME}${PYTHON_COMMONS_HOST}:${PYTHON_COMMONS_PORT} \
