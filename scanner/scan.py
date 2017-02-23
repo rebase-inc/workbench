@@ -32,7 +32,7 @@ def update_ranking(github_id):
 def clean():
     Queue('population_analyzer', connection = StrictRedis(host = 'redis', port = 6379)).enqueue('leaderboard.clean')
 
-def scan_public_users(*github_ids, show_progress = True):
+def scan_public_users(*github_ids, show_progress = True, force_overwrite = False):
     github_ids = github_ids or get_github_users()
     connection = StrictRedis(host = 'redis', port = 6379)
     crawler_queue = Queue('public_github_scanner', connection = connection)
@@ -41,6 +41,7 @@ def scan_public_users(*github_ids, show_progress = True):
         job = crawler_queue.enqueue_call(
                 func = 'scanner.scan_public_repos',
                 args = (github_id,),
+                kwargs = { 'force_overwrite': force_overwrite },
                 result_ttl=86400,
                 )
         jobs.append(job)
