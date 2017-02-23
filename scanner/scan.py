@@ -39,11 +39,12 @@ def scan_public_users(*github_ids, show_progress = True, force_overwrite = False
     jobs = []
     for github_id in github_ids:
         job = crawler_queue.enqueue_call(
-                func = 'scanner.scan_public_repos',
-                args = (github_id,),
-                kwargs = { 'force_overwrite': force_overwrite },
-                result_ttl=86400,
-                )
+            func = 'scanner.scan_public_repos',
+            args = (github_id,),
+            kwargs = { 'force_overwrite': force_overwrite },
+            result_ttl=86400,
+            timeout=12000,
+        )
         jobs.append(job)
     if show_progress:
         show_progress_bars(*jobs)
